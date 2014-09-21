@@ -31,9 +31,9 @@ let rec eval (et : 'a exprTree) : 'a =
 (* PART 2: FOLDING*)
 
 let product (lst : float list) : float =
-    match lst with
-    [] -> 1.0
-    | lst -> List.fold_left (fun acc x -> acc*.x) 1.0 lst
+  match lst with
+  [] -> 1.0
+  | lst -> List.fold_left (fun acc x -> acc*.x) 1.0 lst
 
 let concat_left (lst : string list) : string = 
   failwith "SQUIRREL!!"
@@ -42,13 +42,13 @@ let concat_right (lst : string list) : string =
   failwith "POINT!"
 
 let mapi_lst (f: (int -> 'a -> 'b)) (lst: 'a list) : 'b list =
-    let length lst: int = List.fold_right (fun x acc -> acc+1) lst 0
+  let length lst: int = List.fold_right (fun x acc -> acc+1) lst 0
 in
   List.rev (List.fold_left (fun acc x -> (f (length acc) x)::acc) [] lst)
   
 
 let outline (lst: string list) : string list =
-    mapi_lst (fun i a -> (string_of_int (i+1))^". "^a) (lst: 'a list)
+  mapi_lst (fun i a -> (string_of_int (i+1))^". "^a) (lst: 'a list)
 
       
 let scan_right (f: 'a -> 'b -> 'a) (acc: 'a) (lst: 'b list) : 'a list =
@@ -79,21 +79,65 @@ type matrix = vector list
 
 exception MatrixFailure of string
 
+(* Takes in a matrix and returns a int*int with number of rows in the 1st place 
+  *and columns in the 2nd: (Nrows,Ncols). Requires rectangular matrix*)
+let matrix_size (m : matrix) : int*int = 
+  match m with
+  [] -> (0,0)
+  | h::t -> ((List.length m),(num_cols m))
+
+(*Takes in a rectangular matrix and returns the number of columns in the 
+*matrix.*)
+let num_cols (m : matrix) : int =
+  match m with 
+  [] -> 0
+  | h::t -> List.fold_left (fun acc x -> if (acc=List.length x) then acc else 
+    raise (MatrixFailure "Matrix is not rectangular")) (List.length h) m i  
+
+(*Takes in a int list list and returns a boolean of whether it is a rectangular 
+*matrix or not.*)
+let is_matrix (m : matrix) : bool =
+  if (num_cols m) = (MatrixFailure "Matrix is not rectangular") then false 
+  else true
+
+(*Takes in a rectangular matrix and returns a printout of the whole matrix.*)  
 let show (m : matrix) : unit = 
+  if (is_matrix)=false then (MatrixFailure "Matrix is not rectangular") else
   List.fold_left (fun acc x -> print_endline (List.fold_left (fun acc x -> 
-    (string_of_int x)^" "^acc) "" (List.rev x))) () m
+  (string_of_int x)^" "^acc) "" (List.rev x))) () m
 
+(*Takes in a rectangular matrix and a vector with the same number of elements 
+*as the number of rows in the input matrix.*)
 let insert_col (m : matrix) (c : vector) : matrix = 
-  failwith "Seize reason in your own hand / With your own teeth savor the fruit"
+  if (is_matrix)=false then (MatrixFailure "Matrix is not rectangular") 
+  else if (List.length c) <> (List.length m) then 
+    (MatrixFailure "Number of elements in c and rows in m do not match") else
+    List.rev (List.fold_left2 (fun acc v ce -> (v@[ce])::acc) [] m c)
 
+(*Takes in a rectangular matrix and switches the rows for columns, transposing 
+*it.*)
 let transpose (m : matrix) : matrix = 
-  failwith "It is a way of thought"
+  if (is_matrix)=false then (MatrixFailure "Matrix is not rectangular") 
+  else match m with 
+      [] -> []
+      | h::t -> let m' = List.rev 
+        (List.fold_left (fun acc x -> [x]::acc) [] h)
+      List.fold_left (fun acc x -> insert_col acc x) m' t
 
+(*Takes in two rectangular matrices of equal size and returns a matrix of 
+*equal size composed of the sum of each element of the first two in the 
+*corresponding locations.*)
 let add_matrices (m1 : matrix) (m2 : matrix) : matrix = 
-  failwith "My brain is open"
+  List.rev (List.fold_left2 (fun accv v1 v2 -> List.rev (List.fold_left2 
+    (fun acce e1 e2 -> (e1+e2)::acce) [] v1 v2)::accv) [] m1 m2)
 
+(*Multiplies two rectangular matrices together. Note the number of columns of 
+*the first matrix must equal the number of rows of the second.*)
 let multiply_matrices (m1 : matrix) (m2 : matrix) : matrix = 
-  failwith "If numbers aren't beautiful, I don't know what is"
+  let dt_prd v1 v2 = List.fold_left2 (fun acc e1 e2 -> 
+    (e1*e2)+acc) 0 v1 v2 in
+  List.rev (List.fold_left (fun acc r -> (List.rev (List.fold_left 
+    (fun r' c -> (dt_prd c r)::r') [] (transpose m2)))::acc) [] m1) 
 
 (* PART 4: PATTERN MATCHING *)
 
@@ -159,14 +203,14 @@ and false if all elements are unique. []->false. Precondition: A list.
 Postcondition: boolean.)*)
 let has_dups (l: 'a list) : bool = 
   (*checks if element e is equal to any elements is l*)
-  let rec chkforel (e: 'a) (l:'a list) : bool =
+  let rec chk_for_el (e: 'a) (l:'a list) : bool =
     match l with 
     |[] -> false
-    |hd::tl -> if (e=hd) then true else (chkforel e tl)
+    |hd::tl -> if (e=hd) then true else (chk_for_el e tl)
   in
   match l with
   |[] -> false
-  |h1::h2::tl -> if (chkforel h1 (h2::tl)) then true else (chkforel h2 tl)
+  |h1::h2::tl -> if (chk_for_el h1 (h2::tl)) then true else (chk_for_el h2 tl)
   |hd::tl -> false
 
 (*Checks if all the variable names in a pattern are all unique. 
