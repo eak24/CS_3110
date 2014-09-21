@@ -1,0 +1,26 @@
+commit 8ddca17a01dbf908e1f990e75043bb8342106b3b
+Author: Ethan Keller <ethan.keller@gmail.com>
+Date:   Sat Sep 20 20:18:38 2014 -0400
+
+    Adding comments and finished problem 3
+
+ PS2/ps2.ml | 72 ++++++++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 58 insertions(+), 14 deletions(-)
+
+commit 7d09fd3242e1897b41934099386288b3c953be72
+Author: Ethan Keller <ethan.keller@gmail.com>
+Date:   Sat Sep 20 09:38:40 2014 -0400
+
+    Adding ps2_test
+
+ PS2/ps2_test.ml | 92 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 92 insertions(+)
+
+commit 3e26d3de3c6aac3a4c0019c485c5d88f3c49eae8
+Author: Ethan Keller <ethan.keller@gmail.com>
+Date:   Sat Sep 20 09:32:21 2014 -0400
+
+    Adding the ps2 file
+
+ PS2/ps2.ml | 243 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 243 insertions(+)
