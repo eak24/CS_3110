@@ -2,9 +2,9 @@
    to NATN as required in exercise 1. *)
 module type NATN = sig
 
-  (*Identifies the value is a natural number (within bounds)
-  (i.e. one of 0, 1, 2, ... , max_int)
-   * where max_int is the largest  *)
+  (* Identifies the value is a natural number (within bounds)
+   * (i.e. one of 0, 1, 2, ... , max_int)
+   * where max_int is the largest value possible for this type  *)
   type t
   
   (* zero is the identity of + : zero+a===a 
@@ -28,25 +28,34 @@ module type NATN = sig
    * Precondition: arg1*arg2<= max_int or it will raise an exception.
    * Raises exception(s): Unrepresentable*)
   val ( * ) : t -> t -> t
-  
+
   (* a<b is true if a is less than b, else false*)
   val ( < ) : t -> t -> bool
+
   (* a===b is true if a equals b, else false*)
   val ( === ) : t -> t -> bool
 	
   (*Thrown if while converting between int and nat, 
    * the number can't be represented with the other type.
    * e.g, since nat must be non-negative, if you try and
-   * convert -1:int to nat, Unrepresentable is thrown.
-   * Some other cases: convert 2**128:nat to int*)		    
+   * convert -1:int to nat, Unrepresentable is thrown. 
+   * Also thrown if the value a function would return is supposed to be of 
+   * type t, but has a value that is greater than max_int *)		    
   exception Unrepresentable
   
   (* Converts nat to int
-   * Precondition: arg is in range [0, max_int)
-   * Postcondition: *)
+   * Precondition: None, but note that values of type t must be in [0, max_int]
+   * Postcondition: return value will represent the natural number inputted. 
+   * Raises exception(s): None *)
   val int_of_nat: t -> int
-  (*Converts int to nat*)
+
+  (* Converts int to nat
+   * Precondtion: arg is in [0, max_int]
+   * Postcondition: return value corresponds to int
+   * Raises exception(s): 
+   *     Unrepresentable : if arg<0 *)
   val nat_of_int: int -> t
+
 end
 
 module type AlienMapping = sig
@@ -105,3 +114,14 @@ module IntNat: NATN = struct
     a
 end
 
+
+module NatConvertFn ( N : NATN ) = struct
+  (*For the below functions, I take advantage of the respective functions
+   * inside the module *)
+
+  (**)
+  let int_of_nat ( n : N.t ): int = N.int_of_nat(n)
+
+  (**)
+  let nat_of_int ( n : int ): N . t = N.nat_of_int(n)
+end
