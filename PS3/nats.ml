@@ -114,3 +114,14 @@ module IntNat: NATN = struct
     a
 end
 
+
+module NatConvertFn ( N : NATN ) = struct
+  (*For the below functions, I take advantage of the respective functions
+   * inside the module *)
+
+  (**)
+  let int_of_nat ( n : N.t ): int = N.int_of_nat(n)
+
+  (**)
+  let nat_of_int ( n : int ): N . t = N.nat_of_int(n)
+end
