@@ -1,20 +1,34 @@
 (* BEGIN: DO NOT CHANGE THIS CODE, except for adding comments
    to NATN as required in exercise 1. *)
 module type NATN = sig
-  (*Identifies the value is a natural number (i.e. one of 0, 1, 2, ... ) *)
+
+  (*Identifies the value is a natural number (within bounds)
+  (i.e. one of 0, 1, 2, ... , max_int)
+   * where max_int is the largest  *)
   type t
   
-  (*zero is the identity of + : zero+a===a *)
+  (* zero is the identity of + : zero+a===a 
+   * zero is the smallest value a variable of type t can have *)
   val zero : t
-  (*one is the identity of * : 1*a===a *)
+
+  (*one is the identity of * : one*a===a *)
   val one : t
-  (* + is associative: (a+b)+c === a+(b+c) *)
-  (* + is commutative: a+b === b+a *)
+
+  (* Returns: Sum of the two arguments
+   * + is associative: (a+b)+c === a+(b+c)
+   * + is commutative: a+b === b+a 
+   * Precondition: sum of arg1 and arg2 must be less than or equal to max_int 
+   * Raises: exception Unrepresentable if arg1+arg2>max_int *)
   val ( + ) : t -> t -> t
-  (* * is associative: (a*b)*c === a*(b*c) *)
-  (* * is commutative: a*b === b*c *)
-  (* * is distributive: a*(b+c) === a*b + a*c *)
+
+  (*Returns: Product of the two arguments 
+   * is associative: (a*b)*c === a*(b*c)
+   * is commutative: a*b === b*c 
+   * is distributive: a*(b+c) === a*b + a*c 
+   * Precondition: arg1*arg2<= max_int or it will raise an exception.
+   * Raises exception(s): Unrepresentable*)
   val ( * ) : t -> t -> t
+  
   (* a<b is true if a is less than b, else false*)
   val ( < ) : t -> t -> bool
   (* a===b is true if a equals b, else false*)
@@ -27,7 +41,9 @@ module type NATN = sig
    * Some other cases: convert 2**128:nat to int*)		    
   exception Unrepresentable
   
-  (*Converts nat to int*)
+  (* Converts nat to int
+   * Precondition: arg is in range [0, max_int)
+   * Postcondition: *)
   val int_of_nat: t -> int
   (*Converts int to nat*)
   val nat_of_int: int -> t
@@ -63,6 +79,7 @@ module IntNat: NATN = struct
     if sum_overflows a b then raise Unrepresentable
     else a+b 
 
+  (**)
   let rec mult_overflows (i1:int) (i2:int): bool =
     let rec helper (i:int) (count:int) (acc:int): bool =
       if not (sum_overflows i acc) && count>0 then (helper i (count-1) (acc+i)) 
