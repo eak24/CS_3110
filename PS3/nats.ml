@@ -63,10 +63,10 @@ module IntNat: NATN = struct
     if sum_overflows a b then raise Unrepresentable
     else a+b 
 
-  let rec mult_overflows (i1:int) (i2:int): bool =
+  (*let rec mult_overflows (i1:int) (i2:int): bool =
     let rec helper (i:int) (count:int) (acc:int): bool =
-      if (sum_overflows i acc) && count=0 then (helper i count (acc+i)) else false
-    in helper i1 (i2-1) i1
+      if  not (sum_overflows i acc) && count<>0 then (helper i (count-1) (acc+i)) else false
+    in helper i1 (i2-1) i1 *)
 
 
 
@@ -81,9 +81,40 @@ module IntNat: NATN = struct
     a=b
 
   let int_of_nat (a:t): int =
-    a
+    if a>max_int then raise Unrepresentable
+    else a
 
   let nat_of_int (a:int): t =
-    a
+    if a<0 then raise Unrepresentable
+    else a
+end
+
+module ListNat : NATN = struct
+  (* The list [ a1 ; ...; an ] represents the
+  * natural number n . That is , the list lst represents
+  * length ( lst ). The empty list represents 0. The values of
+  * the list elements are irrelevant . *)
+  type t = int list
+
+  let zero = []
+  let one = [1]
+
+  let ( + ) (a:t) (b:t): t =
+    let la= length(a) in
+    let lb= length(b) in
+    if sum_overflows a b then raise Unrepresentable
+    else a+b  
+
+  let ( * ) (a:t) (b:t): t =
+    let la= length(a) in
+    let lb= length(b) in
+    if mult_overflows la lb then raise Unrepresentable
+    else la*lb
+
+  let ( < ) (a:t) (b:t): bool =
+    let la= length(a) in
+    let lb= length(b) in
+    la<lb 
+
 end
 
