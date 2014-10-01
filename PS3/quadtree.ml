@@ -41,11 +41,11 @@ let rec insert (q: 'a quadtree) (c : coord) (s:'a) : 'a quadtree =
     let midy = yd+.(yd+.yu)/.2.0 in
     let (x,y) = c in
     if (x < xl || x > xr || y < yd || y > yu) then raise OutOfBounds
-    else if (x > midx && y > midy) 
+    else if (x >= midx && y >= midy) 
     then Node (((xl,yd),(xr,yu)),(insert i c s),ii,iii,iv)
-    else if (x < midx && y > midy) 
+    else if (x < midx && y >= midy) 
     then Node (((xl,yd),(xr,yu)),i,(insert ii c s),iii,iv)
-    else if (x < midx && y < midy) 
+    else if (x <= midx && y < midy) 
     then Node (((xl,yd),(xr,yu)),i,ii,(insert iii c s),iv)
     else Node (((xl,yd),(xr,yu)),i,ii,iii,(insert iv c s))
   | Leaf (r,[]) -> Leaf (r,[(c,s)])
@@ -66,9 +66,13 @@ let rec fold_quad (f: 'a -> (coord * 'b)  -> 'a)
         (Leaf (r,[]))
 
 
-(*Folds f over a given region applying it to the elements in no specific 
-*region*)     
+(*Folds f over elements in a given region by applying it to them in no specific 
+*order*)     
 let rec fold_region (f: 'a -> coord * 'b -> 'a) (a : 'a) (t : 'b quadtree) 
   (r : region) : 'a
-= failwith "TODO"
+= let ((xl,yd),(xr,yu))= r in
+let fold_if_in_region (acc: 'a) ((c: coord), (el: 'b)) : 'a =
+let (x,y) = c in 
+if (x < xl || x > xr || y < yd || y > yu) then acc else (f acc (c,el)) in
+fold_quad fold_if_in_region a t 
 
