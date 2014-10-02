@@ -253,11 +253,7 @@ module AlienNatFn ( M : AlienMapping ): NATN = struct
     if sum_overflows ia ib then raise Unrepresentable
     else nat_of_int(ia+ib)
 
-  let mult_overflows (i1:int) (i2:int): bool =
-    let rec helper (i:int) (count:int) (acc:int): bool =
-      if not (sum_overflows i acc) && count>0 then (helper i (count-1) (acc+i)) 
-    else if count<=0 then false else true in 
-    helper i1 (i2-1) i1
+  let mult_overflows a b = true
 
   let ( * ) (a:t) (b:t):t = 
     let la= int_of_nat(a) in
