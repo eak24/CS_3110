@@ -1,5 +1,13 @@
 type coord = float * float
 type region = coord * coord
+
+(*A quadtree is a sparse 2D representation of data. 
+*Each leaf contains a region and points within that region associated with some 
+*type a'. Each node points to four trees that have a region of one quarter of 
+*the parent node as divided along the centerlines of either side. 
+*A node represents each of its children's regions as a tuple in the order of 
+*the cartesian quadrant numbering, i.e. quadrant i is where x>=0 and y>=0, and 
+ii is to the left of i, iii below ii and iv to the right of iii*)
 type 'a quadtree =
   Node of region * 'a quadtree * 'a quadtree * 'a quadtree * 'a quadtree
   | Leaf of region * ((coord * 'a) list)
@@ -7,21 +15,7 @@ type 'a quadtree =
 let min_diagonal = 0.0000001
          
 exception OutOfBounds
-
-(*Requires a region and returns a quadtree composed of one node pointing to 
-*four empty leaves. Each empty leaf has a region that encompasses one quarter
-of the parent node's region, as divided along the two midlines of
-the parent node's region. Two adjoining 
-*leaves both have regions that include the centerline.*)
-let new_tree (r:region) : 'a quadtree = 
-  let ((xll,yll),(xur,yur))= r in 
-  let midx=(xll+.(xur-.xll)/.2.0) in
-  let midy=(yll+.(yur-.yll)/.2.0) in
-  let mid=(midx,midy) in
-  Node (r , Leaf ((mid , (snd r)) , []) , 
-    Leaf (((xll,midy) , (midx,yur)) , []) , 
-    Leaf (((fst r) , mid) , []) , 
-    Leaf (((midx,yll) , (xur,midy)) , [])) 
+exception RegionTooSmall
 
 (*Requires a region and returns the length of the diagonal of the region as a 
 float.*)
@@ -29,17 +23,24 @@ let measure_diagonal (r:region) : float =
     let ((xll,yll),(xur,yur))= r in
     ((xur-.xll)**2.0+.(yur-.yll)**2.0)**0.5
 
+(*Requires a region and returns a quadtree composed of an empty leaf that 
+*contains that region. If the region is too small (the diagonal<.0000001), 
+*then raises exception "RegionTooSmall"*)
+let new_tree (r:region) : 'a quadtree = 
+  if (measure_diagonal r)<min_diagonal then raise RegionTooSmall 
+  else Leaf (r,[])
+
 (*Requires a quadtree (q) of the same type as something (s) to be inserted, s 
 and the coordinate at which to insert s. If the coordinate is on the dividing 
 lines between two leave's regions, the coordinate will go in the leaf with
 the region of the lowest numbered quadrant as numbered starting with the lowest
 in the upper right corner and increasing as one moves counter-clockwise.*)
 let rec insert (q: 'a quadtree) (c : coord) (s:'a) : 'a quadtree =
+  let (x,y) = c in
   match q with 
   | Node (((xl,yd),(xr,yu)),i,ii,iii,iv) ->
     let midx = xl+.(xl+.xr)/.2.0 in
     let midy = yd+.(yd+.yu)/.2.0 in
-    let (x,y) = c in
     if (x < xl || x > xr || y < yd || y > yu) then raise OutOfBounds
     else if (x >= midx && y >= midy) 
     then Node (((xl,yd),(xr,yu)),(insert i c s),ii,iii,iv)
@@ -48,10 +49,14 @@ let rec insert (q: 'a quadtree) (c : coord) (s:'a) : 'a quadtree =
     else if (x <= midx && y < midy) 
     then Node (((xl,yd),(xr,yu)),i,ii,(insert iii c s),iv)
     else Node (((xl,yd),(xr,yu)),i,ii,iii,(insert iv c s))
-  | Leaf (r,[]) -> Leaf (r,[(c,s)])
-  | Leaf (r,(hc,ha)::t) -> if (measure_diagonal r)< min_diagonal
-                     then Leaf (r, (c, s)::(hc,ha)::t)
-                     else insert (insert (new_tree (r)) (hc) (ha)) c s 
+  | Leaf (((xl,yd),(xr,yu)),[]) -> 
+  if (x < xl || x > xr || y < yd || y > yu) then raise OutOfBounds
+else Leaf (((xl,yd),(xr,yu)),[(c,s)])
+  | Leaf (((xl,yd),(xr,yu)),(hc,ha)::t) -> 
+  if (x < xl || x > xr || y < yd || y > yu) then raise OutOfBounds 
+else if (measure_diagonal ((xl,yd),(xr,yu)))< min_diagonal 
+then Leaf (((xl,yd),(xr,yu)), (c, s)::(hc,ha)::t)
+else insert (insert (new_tree ((xl,yd),(xr,yu))) (hc) (ha)) c s                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 
 (*Requires a valid quadtree and a function that can accept each element of the
 *tree. Returns the quadtree that has beed folded using the passed in function 
@@ -66,8 +71,8 @@ let rec fold_quad (f: 'a -> (coord * 'b)  -> 'a)
         (Leaf (r,[]))
 
 
-(*Folds f over elements in a given region by applying it to them in no specific 
-*order*)     
+(*Folds f over elements in a given region r in a given tree, t, by applying it to them in no specific 
+*order. Takes in accumulator a.*)     
 let rec fold_region (f: 'a -> coord * 'b -> 'a) (a : 'a) (t : 'b quadtree) 
   (r : region) : 'a
 = let ((xl,yd),(xr,yu))= r in
