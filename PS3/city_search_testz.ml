@@ -24,3 +24,5 @@ TEST_UNIT "city_search_test2"=assert_true ((sear1)=high_map)
 TEST_UNIT "city_search_test3"=assert_true (sear2=middle_map)
 TEST_UNIT "city_search_test4"=assert_raises (Some (Failure "BadRegion")) (city_search
 	world) ((1.,1.),(0.,0.)) 
+
+let () = Pa_ounit_lib.Runtime.summarize ()
