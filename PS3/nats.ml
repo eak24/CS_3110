@@ -232,7 +232,7 @@ module AlienNatFn ( M : AlienMapping ): NATN = struct
     else
       let rec helper (counter:int):t =
         match counter with
-        | 0 -> [M.one]
+        | 0 -> [M.zero]
         | x -> M.one::helper (x-1)
       in
       helper(i)
@@ -257,8 +257,6 @@ module AlienNatFn ( M : AlienMapping ): NATN = struct
     let ib = int_of_nat(b) in
     if sum_overflows ia ib then raise Unrepresentable
     else nat_of_int(ia+ib)
-
-  let mult_overflows a b = true
 
   let ( * ) (a:t) (b:t):t = 
     let la= int_of_nat(a) in
