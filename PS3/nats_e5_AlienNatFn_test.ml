@@ -1,17 +1,20 @@
 open Assertions 
 open Nats
 
-type alie =  list of Ethan | Andrea | Zichuan
+type alie =  Ethan | Andrea | Zichuan
+type mmm = alie list
 
 
-module M: (AlienMapping with type aliensym=alie)= struct
-  type aliensym = alie
 
-  let int_of_aliensym (x:aliensym):int= 
+module M: (AlienMapping with type aliensym=mmm)= struct
+  type aliensym = mmm
+
+  let rec int_of_aliensym (x:aliensym):int= 
   	match x with 
-  	|Ethan -> 0
-  	|Andrea -> 1
-  	|Zichuan -> 2
+  	| [] -> 0
+  	|[Ethan::t] -> 0 + int_of_aliensym(t)
+  	|[Andrea::t] -> 1 + int_of_aliensym(t)
+  	|[Zichuan::t] -> 2 + int_of_aliensym(t)
   let zero=[Ethan]
   let one=[Andrea]
   
