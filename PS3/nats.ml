@@ -104,7 +104,7 @@ module IntNat: NATN = struct
   let rec mult_overflows (i1:int) (i2:int): bool =
     let rec helper (i:int) (count:int) (acc:int): bool =
       if not (sum_overflows i acc) && count>0 then (helper i (count-1) (acc+i)) 
-    else if count<=0 then false else true in 
+      else if count<=0 then false else true in 
     helper i1 (i2-1) i1
 
   let ( * ) (a:t) (b:t): t =
@@ -147,7 +147,7 @@ module ListNat : NATN = struct
   let mult_overflows (i1:int) (i2:int): bool =
     let rec helper (i:int) (count:int) (acc:int): bool =
       if not (sum_overflows i acc) && count>0 then (helper i (count-1) (acc+i)) 
-    else if count<=0 then false else true in 
+      else if count<=0 then false else true in 
     helper i1 (i2-1) i1
 
   let nat_of_int (i:int):t =
@@ -158,7 +158,6 @@ module ListNat : NATN = struct
         else helper (i-1) (1::acc)
       in
       helper i []
-      (*???I think this is tail recursive*)
 
   let ( + ) (a:t) (b:t): t =
     (*The return type of List.length is an int which must be less than max_int*)
@@ -194,14 +193,14 @@ module NatConvertFn ( N : NATN ) = struct
   (* Converts a number of type N.t to the corresponding int value.
    * May raise an error if the value of type t cannot be represented as an int
    * Precondition: None
-   * Postcondition: None*)
+   * Postcondition: None *)
   let int_of_nat ( n : N.t ): int = N.int_of_nat(n)
 
   (* Converts a number of type int to the corresponding value of type N.t 
    * May raise an error if the value of type int cannot be represented as a 
    * value of type t.
    * Precondition: None
-   * Postcondition: None*)
+   * Postcondition: None *)
   let nat_of_int ( n : int ): N.t = N.nat_of_int(n)
 end
 
@@ -219,6 +218,12 @@ module AlienNatFn ( M : AlienMapping ): NATN = struct
   let zero = [M.zero]
   let one = [M.one]
   exception Unrepresentable
+
+  let mult_overflows (i1:int) (i2:int): bool =
+    let rec helper (i:int) (count:int) (acc:int): bool =
+      if not (sum_overflows i acc) && count>0 then (helper i (count-1) (acc+i)) 
+      else if count<=0 then false else true in 
+    helper i1 (i2-1) i1
 
   let nat_of_int (i:int):t= 
   (* Any int is garunteed to be of value max_int or less, so type t invariant
