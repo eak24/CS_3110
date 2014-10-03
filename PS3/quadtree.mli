@@ -6,6 +6,8 @@ type 'a quadtree =
 | Leaf of region * (coord * 'a) list
 val min_diagonal : float
 exception OutOfBounds
+exception InvalidRegion
+val valid_region : region -> bool
 val new_tree : region -> 'a quadtree
 val insert : 'a quadtree -> coord -> 'a -> 'a quadtree
 val fold_quad : ('a -> coord * 'b -> 'a) -> 'a -> 'b quadtree -> 'a
