@@ -22,11 +22,24 @@ module type LIST_ITERATOR = sig
   val create: 'a list -> 'a t
 end
 
-(* TODO:
+
 module ListIterator : LIST_ITERATOR = struct
-  ...
+  type 'a t =  'a list ref
+  exception NoResult
+  let has_next (x:'a t)=
+   match !x with
+   | []->false
+   | h::t -> true
+
+  let next (x: 'a t): 'a =
+    match !x with 
+    | [] -> raise NoResult
+    | h::t -> let _ = x:=t in h
+
+  let create  (lst:'a list): 'a t =
+    ref lst
+
 end
-*)
 
 type 'a tree = Leaf | Node of ('a * 'a tree * 'a tree)
 
@@ -39,11 +52,26 @@ module type INORDER_TREE_ITERATOR = sig
   val create: 'a tree -> 'a t
 end
 
-(* TODO:
+
 module InorderTreeIterator : INORDER_TREE_ITERATOR = struct
-  ...
+  type 'a t = 'a list ref
+  exception NoResult
+  let has_next (x:'a t)=
+   match !x with
+   | []->false
+   | h::t -> true
+
+  let next (x: 'a t): 'a =
+    match !x with 
+    | [] -> raise NoResult
+    | h::t -> let _ = x:=t in h
+
+  let rec create (t:'a tree): 'a t =
+    match t with
+    | Leaf -> ref []
+    | Node (v,l,r) -> ref ((!(create l))@[v]@(!(create r)))
 end
-*)
+
 
 module type TAKE_ITERATOR = functor (I: ITERATOR) -> sig
   include ITERATOR
