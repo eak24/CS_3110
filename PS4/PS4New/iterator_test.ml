@@ -45,9 +45,26 @@ TEST_UNIT "InorderTreeIterator tests" =
   assert_raises (Some InorderTreeIterator.NoResult) InorderTreeIterator.next a;
   ()
 
+TEST_UNIT "TakeIterator tests" = 
+  let lit = ListIterator.create [1;2] in
+  module Tlit = TakeIterator(lit)
+  let tlit = Tlit.create 1 lit in
+  assert_true(Tlit.has_next tlit);
+  assert_true(Tlit.next tlit = 1);
+  assert_false(Tlit.has_next tlit);
+  assert_raises (Some Tlit.NoResult) Tlit.next tlit;
 
+  let tit = InorderTreeIterator.create (Node (2, Node (1, Leaf, Leaf), Leaf)) in
+  module Ttit = TakeIterator(tit)
+  let ttit = Ttit.create 1 tit in
+  assert_true(Ttit.has_next ttit);
+  assert_true(Ttit.next Ttit = 1);
+  assert_false(Ttit.has_next ttit);
+  assert_raises (Some Ttit.NoResult) Ttit.next ttit;
 
-
-
+  let ttit2 = Ttit.create 0 tit in
+  assert_false(Ttit.has_next ttit2);
+  assert_raises (Some Ttit.NoResult) Ttit.next ttit2;
+  ()
 
 let () = Pa_ounit_lib.Runtime.summarize ()

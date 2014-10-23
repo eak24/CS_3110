@@ -80,11 +80,28 @@ module type TAKE_ITERATOR = functor (I: ITERATOR) -> sig
   val create: int -> 'a I.t -> 'a t
 end
 
-(* TODO:
+
 module TakeIterator : TAKE_ITERATOR = functor (I : ITERATOR) -> struct
-  ...
+  type 'a t =  'a I.t * int ref
+  exception NoResult
+
+  (* Returns: bool, true if I.has_next would return true
+   * and has_next*)
+  let has_next (x: 'a t)= 
+    let (a, i)=x in 
+    if (!i)>0 then I.has_next (fst x) else false (*next should be
+    able to return something on its next call for this to
+    be true *)
+
+  let next (x: 'a t)=
+    let (a, i)=x in 
+    let _ = i:=((!i)-1) in
+    if (!i)>=0 then I.next (fst x) else raise NoResult
+  let create  (x:int) (y: 'a I.t) =
+    (y, ref x)
+
 end
-*)
+
 
 module IteratorUtilsFn (I : ITERATOR) = struct
   open I
@@ -115,8 +132,8 @@ module type RANGE_ITERATOR = functor (I : ITERATOR) -> sig
   val create : int -> int -> 'a I.t -> 'a t
 end
 
-(* TODO:
+(*
 module RangeIterator : RANGE_ITERATOR = functor (I : ITERATOR) -> struct
-  ...
+  
 end
 *)
