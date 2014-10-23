@@ -97,6 +97,7 @@ module TakeIterator : TAKE_ITERATOR = functor (I : ITERATOR) -> struct
     let (a, i)=x in 
     let _ = i:=((!i)-1) in
     if (!i)>=0 then I.next (fst x) else raise NoResult
+
   let create  (x:int) (y: 'a I.t) =
     (y, ref x)
 
@@ -109,14 +110,18 @@ module IteratorUtilsFn (I : ITERATOR) = struct
   (* effects: causes i to yield n results, ignoring
    *   those results.  Raises NoResult if i does.  *)
   let advance (n: int) (iter: 'a I.t) : unit =
-    failwith "Not implemented"
+    let rec helper i = 
+      match i with
+        | 0 -> ()
+        | i -> let _ = I.next iter in helper (i-1)
+    in helper n
 
   (* returns: the final value of the accumulator after
    *   folding f over all the results returned by i,
    *   starting with acc as the initial accumulator.
    * effects: causes i to yield all its results. *)
   let rec fold (f : ('a -> 'b -> 'a)) (acc : 'a) (iter: 'b I.t) : 'a =
-    failwith "Not implemented"
+    if I.has_next iter then (fold f (f acc (I.next iter)) iter) else acc
 end
 
 module type RANGE_ITERATOR = functor (I : ITERATOR) -> sig
@@ -132,8 +137,28 @@ module type RANGE_ITERATOR = functor (I : ITERATOR) -> sig
   val create : int -> int -> 'a I.t -> 'a t
 end
 
-(*
+
 module RangeIterator : RANGE_ITERATOR = functor (I : ITERATOR) -> struct
-  
+  type 'a t =  'a I.t * int ref
+  exception NoResult
+
+(* Returns: bool, true if I.has_next would return true
+   * and has_next*)
+  let has_next (x: 'a t)= 
+    let (a, i)=x in 
+    if (!i)>0 then I.has_next (fst x) else false (*next should be
+    able to return something on its next call for this to
+    be true *)
+
+  let next (x: 'a t)=
+    let (a, i)=x in 
+    let _ = i:=((!i)-1) in
+    if (!i)>=0 then I.next (fst x) else raise NoResult
+
+  let create (n:int) (m:int) (x:'a I.t) : 'a t =
+    let module Z = IteratorUtilsFn(I) in
+    let _ = Z.advance n x in 
+    (x, ref m)
+
 end
-*)
+
