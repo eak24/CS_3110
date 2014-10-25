@@ -59,7 +59,7 @@ in
   | Atom (Identifier id) when Identifier.is_valid_variable id ->
     ExprVariable (Identifier.variable_of_identifier id)
 
-  | Atom (Identifier id) -> ExprVariable (Identifier.variable_of_identifier id)
+  | Atom (Identifier id) -> raise (Error "Keyword is invalid variable name")
   | Atom (Boolean b) -> ExprSelfEvaluating (SEBoolean b)
   | Atom (Integer i) -> ExprSelfEvaluating (SEInteger i)
 
@@ -192,8 +192,41 @@ let rec initial_environment () : environment =
    statement. *)
 and eval (expression : expression) (env : environment) : value =
 
+(* Returns all duplicates in a given list. Returns [] for a lst with no dupes.*)
+let dupes_in_lst (lst : 'a list) : 'a list =
+  List.fold_left (fun acc x -> if List.mem x lst then x::acc else acc) [] lst 
+in
+
 let procCall_helper (e1 : expression) (elst : expression list) 
   (env : environment) : value =
+  match (eval e1 env) with 
+  | ValProcedure (ProcLambda (vlst , env, e1lst)) 
+    (* Checks # vars = # expressions and first exp not empty.*)
+    when (List.length vlst)=(List.length elst) && e1lst <> []
+      -> 
+      let env' = List.fold_left2 
+      (* Add bindings one at a time to the environment.*)
+      (fun acc v e -> Environment.add_binding acc (v, ref (eval e env))) 
+      env vlst elst in
+      (* Evaluate e1lst in the new environment one at a time.*)  
+      List.fold_left (fun acc e -> eval e acc) (value (ValDatum Nil)) e1lst 
+  | ValProcedure (ProcLambda (vlst , env, e1lst)) -> raise (Error "Invalid
+    procedure call, error with ProcLambda construction.") 
+  | ValProcedure (ProcBuiltin f) -> f (List.map (fun x -> eval x env) elst) env   
+  | _ -> raise Error
+in
+
+let let_helper (lblst : let_binding list) (elst : expression list) : value =
+  if dupes_in_lst lblst <> [] 
+  then raise (Error "Duplicate variable names in let exp")
+  else if elst = [] then raise (Error "let binding requires at least 1 expr") 
+  else (* Add bindings simultaneously to the environment.*)
+    List.fold_left 
+    (fun acc b -> let (v , e) = b in Environment.add_binding env b) 
+    env vlst lblst in
+    (* Evaluate body expressions in new environment right to left.*)
+    List.fold_left (fun acc x -> eval x env) (value (ValDatum Nil)) elst
+in
 
 
   match expression with
@@ -211,10 +244,14 @@ let procCall_helper (e1 : expression) (elst : expression list)
       | ValDatum (Atom (Boolean false)) -> eval e3 env
       | _ -> eval e2 env) 
 
-  | ExprAssignment (_, _) ->
-     failwith "Say something funny, Rower!"
-  | ExprLet (_, _)
+  | ExprAssignment (v , e) -> if Environment.is_bound env v then 
+      (Environment.get_binding env v) := (eval e env) 
+      else raise (Error "Invalid assignment")
+
+  | ExprLet (lblst , elst) -> let_helper lblst elst
+
   | ExprLetStar (_, _)
+
   | ExprLetRec (_, _)     ->
      failwith "Ahahaha!  That is classic Rower."
 
