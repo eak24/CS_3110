@@ -13,21 +13,97 @@ and value =
 and binding = value ref Environment.binding
 and environment = value ref Environment.environment
 
+(* Exceptions*)
+exception Error of string 
+
 (* Parses a datum into an expression. *)
 let rec read_expression (input : datum) : expression =
+
+
+  (* Helper functions for read_expression.*)
+  let rec cons_to_exp_list (dat : datum) : expression list =
+    match dat with 
+    | Cons (car,Nil) -> [read_expression car]
+    | Cons (car,cdr) -> (read_expression car)::(cons_to_exp_list cdr)
+    | _ -> [read_expression dat]
+  in
+
+  let rec cons_to_var_list (dat : datum) : variable list =
+    match dat with 
+    | Nil -> []
+    | Atom (Identifier id) -> [Identifier.variable_of_identifier id]
+    | Cons (car,cdr) -> 
+        (cons_to_var_list car) @ (cons_to_var_list cdr)
+    | _ -> raise (Error "cons_to_var_list, this should be a variable")
+  in
+
+  let rec let_binding_helper (dat : datum) : let_binding list = 
+    match dat with
+    | Cons ( Cons (Atom (Identifier id), cdr'), Nil) 
+        when Identifier.is_valid_variable id -> 
+        [((Identifier.variable_of_identifier id),(read_expression cdr'))]
+
+    | Cons ( Cons (Atom (Identifier id),cdr'), cdr) 
+        when Identifier.is_valid_variable id -> 
+        ((Identifier.variable_of_identifier id),(read_expression cdr'))::
+        (let_binding_helper cdr)
+
+    | _ -> raise (Error "let_binding_helper warning, datum must be let binding")
+in
+
   match input with
+  | Nil -> raise (Error "Nil matched in read_expression")
+
+  (* Self evaluating matches*)
   | Atom (Identifier id) when Identifier.is_valid_variable id ->
-     failwith "Oh my God!  You are The Rower!"
-  | Atom (Identifier id) ->
-     (* Above match case didn't succeed, so id is not a valid variable. *)
-     failwith "I'm such a huge fan!"
-  | _ ->
-     failwith "Everything you do is just amazing!"
+    ExprVariable (Identifier.variable_of_identifier id)
+
+  | Atom (Identifier id) -> ExprVariable (Identifier.variable_of_identifier id)
+  | Atom (Boolean b) -> ExprSelfEvaluating (SEBoolean b)
+  | Atom (Integer i) -> ExprSelfEvaluating (SEInteger i)
+
+  (* Cons(keyword, cdr) matches*)
+  | Cons (Atom (Identifier id),cdr) when Identifier.string_of_identifier id = 
+      "quote" -> ExprQuote cdr
+
+  | Cons (Atom (Identifier id),(Cons (a, (Cons (b, c))))) when 
+      Identifier.string_of_identifier id = "if" ->
+      ExprIf ((read_expression a), (read_expression b), (read_expression c))
+
+  | Cons (Atom (Identifier id),Cons (car',cdr')) when 
+      Identifier.string_of_identifier id = 
+      "lambda" -> ExprLambda ((cons_to_var_list car'),(cons_to_exp_list cdr'))
+
+  | Cons (Atom (Identifier id), Cons (Atom (Identifier var),cdr)) 
+      when Identifier.string_of_identifier id = 
+      "set!" -> ExprAssignment 
+      ((Identifier.variable_of_identifier var),(read_expression cdr)) 
+
+  | Cons (Atom (Identifier id), Cons(b1, cdr')) when 
+      Identifier.string_of_identifier id = 
+      "let" -> ExprLet ((let_binding_helper b1),(cons_to_exp_list cdr')) 
+
+  | Cons (Atom (Identifier id), Cons(b1, cdr')) when 
+      Identifier.string_of_identifier id = 
+      "let*" -> ExprLetStar ((let_binding_helper b1),(cons_to_exp_list cdr')) 
+
+  | Cons (Atom (Identifier id), Cons(b1, cdr')) when 
+      Identifier.string_of_identifier id = 
+      "letrec" -> ExprLetRec ((let_binding_helper b1),(cons_to_exp_list cdr')) 
+
+  (* Cons recursive calls*)
+  | Cons (car, Nil) -> read_expression car
+  | Cons (car, cdr) -> ExprProcCall (read_expression car, cons_to_exp_list cdr)
+
+
 
 (* Parses a datum into a toplevel input. *)
 let read_toplevel (input : datum) : toplevel =
-  match input with
+  (*match input with
   | _ -> failwith "Sing the Rowing Song!"
+  | Cons (Atom (Identifier id),cdr) when Identifier.string_of_identifier id = 
+      "define" -> ExprAssignment (read_expression cdr) *)
+failwith "ethan is great"
 
 (* This function returns an initial environment with any built-in
    bound variables. *)
