@@ -3,6 +3,8 @@ open Ast
 open Eval
 include Repl
 
+(*add print statements and try ignore around thing that opens it.*)
+
 
 exception Err
 let dat_list_to_dat (xs: datum list) : datum =
