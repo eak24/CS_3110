@@ -20,7 +20,8 @@ exception Error of string
 let rec read_expression (input : datum) : expression =
 
 
-  (* Helper functions for read_expression.*)
+  (* Helper functions for read_expression... takes in a datum with cons'd 
+   * expressions and produces the corresponding list of expressions.*)
   let rec cons_to_exp_list (dat : datum) : expression list =
     match dat with 
     | Cons (car,Nil) -> [read_expression car]
@@ -52,7 +53,7 @@ let rec read_expression (input : datum) : expression =
 in
 
   match input with
-  | Nil -> raise (Error "Nil matched in read_expression")
+  | Nil -> raise (Error "Unknown expression form")
 
   (* Self evaluating matches*)
   | Atom (Identifier id) when Identifier.is_valid_variable id ->
@@ -99,16 +100,90 @@ in
 
 (* Parses a datum into a toplevel input. *)
 let read_toplevel (input : datum) : toplevel =
-  (*match input with
-  | _ -> failwith "Sing the Rowing Song!"
-  | Cons (Atom (Identifier id),cdr) when Identifier.string_of_identifier id = 
-      "define" -> ExprAssignment (read_expression cdr) *)
-failwith "ethan is great"
+  match input with
+  | Cons (Atom (Identifier id),Cons (Atom (Identifier var), cdr)) 
+      when Identifier.string_of_identifier id = 
+      "define" -> ToplevelDefinition (Identifier.variable_of_identifier var,
+      read_expression cdr)
+  | _ -> ToplevelExpression (read_expression input)
 
 (* This function returns an initial environment with any built-in
    bound variables. *)
 let rec initial_environment () : environment =
-  failwith "You know!"
+
+  let e_empt = Environment.empty_environment in
+
+  let e_course = Environment.add_binding e_empt 
+    (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "course"), ref (ValDatum 
+    (Atom (Integer 3110)))) in
+
+  let e_car = Environment.add_binding e_course 
+    (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "car"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env ->
+        match vlst with 
+        | [ValDatum (Cons (car, cdr))] -> ValDatum car
+        | _ -> raise (Error "Invalid arguments for car"))))) in
+  
+  let e_cdr = Environment.add_binding e_car (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "cdr"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env ->
+        match vlst with 
+        | [ValDatum (Cons (car, cdr))] -> ValDatum cdr
+        | _ -> raise (Error "Invalid arguments for cdr"))))) in
+  
+  let e_cons = Environment.add_binding e_cdr (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "cons"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env ->
+        match vlst with 
+        | [(ValDatum car);(ValDatum cdr)] -> ValDatum (Cons (car , cdr))
+        | _ -> raise (Error "Invalid arguments for cons"))))) in
+  
+  let e_plus = Environment.add_binding e_cons 
+    (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "+"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env -> 
+        match vlst with
+        | [] -> raise (Error "+ expects atleast 1 argument")
+        | lst -> ValDatum (Atom (Integer (List.fold_left (fun acc x -> 
+          match x with
+          | ValDatum (Atom (Integer i)) -> i + acc
+          | _ -> raise (Error "+ expects all integer arguments" )) 0 lst))))))) 
+    in
+
+  let e_mult = Environment.add_binding e_plus 
+    (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "*"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env -> 
+        match vlst with
+        | [] -> raise (Error "* expects atleast 1 argument")
+        | lst -> ValDatum (Atom (Integer (List.fold_left (fun acc x -> 
+          match x with
+          | ValDatum (Atom (Integer i)) -> i + acc
+          | _ -> raise (Error "* expects all integer arguments")) 1 lst)))))))
+    in
+
+  let e_equal = Environment.add_binding e_mult 
+    (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "equal?"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env -> 
+        match vlst with
+        | v1::v2::[] -> ValDatum (Atom (Boolean (v1=v2)))
+        | _ -> raise (Error "equal? expects exactly 2 arguments"))))) in
+
+  let e_eval = Environment.add_binding e_equal 
+    (Identifier.variable_of_identifier 
+    (Identifier.identifier_of_string "eval"), ref (ValProcedure (ProcBuiltin
+      (fun vlst env -> 
+        match vlst with
+        | [] -> raise (Error "eval expects exactly 1 argument")
+        | v1::v2::t -> raise (Error "eval expects exactly 1 argument")
+        | (ValDatum datum)::[] -> eval (read_expression datum) env 
+        | _ -> raise (Error "Internal error in e_eval"))))) in
+
+    e_eval
+
 
 (* Evaluates an expression down to a value in a given environment. *)
 (* You may want to add helper functions to make this function more
@@ -116,17 +191,26 @@ let rec initial_environment () : environment =
    would be a helper function for each pattern in the match
    statement. *)
 and eval (expression : expression) (env : environment) : value =
+
+let procCall_helper (e1 : expression) (elst : expression list) 
+  (env : environment) : value =
+
+
   match expression with
-  | ExprSelfEvaluating _
-  | ExprVariable _        ->
-     failwith "'Oh I sure love to row my boat with my...oar."
-  | ExprQuote _           ->
-     failwith "Rowing!"
-  | ExprLambda (_, _)
-  | ExprProcCall _        ->
-     failwith "Sing along with me as I row my boat!'"
-  | ExprIf (_, _, _) ->
-     failwith "But I love you!"
+  | ExprSelfEvaluating SEBoolean b -> ValDatum (Atom (Boolean b))
+  | ExprSelfEvaluating SEInteger i -> ValDatum (Atom (Integer i))
+  | ExprVariable v -> if Environment.is_bound env v then 
+      !(Environment.get_binding env v) else raise (Error "Variable not bound")
+  | ExprQuote d -> ValDatum d
+  | ExprLambda (vl , el) -> ValProcedure (ProcLambda (vl,env,el))
+  | ExprProcCall (e1 , elst) ->
+     procCall_helper e1 elst env
+
+  | ExprIf (e1 , e2 , e3) -> 
+      (match (eval e1 env) with
+      | ValDatum (Atom (Boolean false)) -> eval e3 env
+      | _ -> eval e2 env) 
+
   | ExprAssignment (_, _) ->
      failwith "Say something funny, Rower!"
   | ExprLet (_, _)
