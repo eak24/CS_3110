@@ -197,6 +197,7 @@ let dupes_in_lst (lst : 'a list) : 'a list =
   List.fold_left (fun acc x -> if List.mem x lst then x::acc else acc) [] lst 
 in
 
+
 (* Add bindings from left to right, one at a time to the environment, extending 
  * the environment for evaluating each subsequent binding expression.*)
 let extend_env_seq (env : environment) (vlst : variable list) 
@@ -236,7 +237,7 @@ let rec eval_elst_sim (env : environment) (elst : expression list)
   | h::t -> eval env h2
   | [] -> raise (Error "Internal error: empty list match in eval_elst_sim")
 in
-
+*)
 let procCall_helper (e1 : expression) (elst : expression list) 
   (env : environment) : value =
   match (eval e1 env) with 
@@ -250,7 +251,7 @@ let procCall_helper (e1 : expression) (elst : expression list)
   | _ -> raise 
       (Error "Invalid procedure call, error with ProcBuiltin construction.")
 in
-
+(*
 let let_helper (lblst : let_binding list) (elst : expression list) : value =
   if dupes_in_lst lblst <> [] 
   then raise (Error "Duplicate variable names in let exp")
@@ -278,8 +279,7 @@ in
       !(Environment.get_binding env v) else raise (Error "Variable not bound")
   | ExprQuote d -> ValDatum d
   | ExprLambda (vl , el) -> ValProcedure (ProcLambda (vl,env,el))
-  | ExprProcCall (e1 , elst) -> raise (Error "Not done")
-     (*procCall_helper e1 elst env*)
+  | ExprProcCall (e1 , elst) -> procCall_helper e1 elst env
 
   | ExprIf (e1 , e2 , e3) -> 
       (match (eval e1 env) with
