@@ -1,3 +1,8 @@
+(*Added by Us*)
+exception Error
+
+
+
 (** The [Eval] module transforms unevaluated expression trees to evaluated
     expression trees. *)
 
