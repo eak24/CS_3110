@@ -197,7 +197,7 @@ let dupes_in_lst (lst : 'a list) : 'a list =
   List.fold_left (fun acc x -> if List.mem x lst then x::acc else acc) [] lst 
 in
 
-
+*)
 (* Add bindings from left to right, one at a time to the environment, extending 
  * the environment for evaluating each subsequent binding expression.*)
 let extend_env_seq (env : environment) (vlst : variable list) 
@@ -206,7 +206,7 @@ let extend_env_seq (env : environment) (vlst : variable list)
     (fun acc v e -> Environment.add_binding acc (v, ref (eval e acc))) 
     env vlst elst
 in 
-
+(*
 
 (* Adds bindings simultaneously to the environment, using the passed in 
  * environment to evaluate each binding expression.*)
@@ -216,18 +216,18 @@ let extend_env_sim (env : environment) (vlst : variable list)
       (fun acc v e -> Environment.add_binding acc (v, ref (eval e env))) 
       env vlst elst 
 in 
-
+*)
 (* Evaluate expressions left to right. Returns the value of the last 
  * expression call.*)
 let rec eval_elst_seq (env : environment) (elst : expression list)  
   : value =
   match elst with
   | h1::h2::t -> let _ = eval h1 env in 
-      eval_elst_seq env (((fst h2),(eval h2 env))::t)
-  | h::t -> eval env h2
+      eval_elst_seq env (h2::t)
+  | h::t -> eval h env
   | [] -> raise (Error "Internal error: empty list match in eval_elst_seq")
 in
-
+(*
 (* Evaluate all expressions in passed in env. Returns the value of the last 
  * expression call. *)
 let rec eval_elst_sim (env : environment) (elst : expression list) 
