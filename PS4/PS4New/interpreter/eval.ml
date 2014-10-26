@@ -191,10 +191,50 @@ let rec initial_environment () : environment =
    would be a helper function for each pattern in the match
    statement. *)
 and eval (expression : expression) (env : environment) : value =
-
+(*
 (* Returns all duplicates in a given list. Returns [] for a lst with no dupes.*)
 let dupes_in_lst (lst : 'a list) : 'a list =
   List.fold_left (fun acc x -> if List.mem x lst then x::acc else acc) [] lst 
+in
+
+(* Add bindings from left to right, one at a time to the environment, extending 
+ * the environment for evaluating each subsequent binding expression.*)
+let extend_env_seq (env : environment) (vlst : variable list) 
+  (elst : expression list) : environment = 
+  List.fold_left2 
+    (fun acc v e -> Environment.add_binding acc (v, ref (eval e acc))) 
+    env vlst elst
+in 
+
+
+(* Adds bindings simultaneously to the environment, using the passed in 
+ * environment to evaluate each binding expression.*)
+let extend_env_sim (env : environment) (vlst : variable list) 
+  (elst : expression list) : environment = 
+    List.fold_left2 
+      (fun acc v e -> Environment.add_binding acc (v, ref (eval e env))) 
+      env vlst elst 
+in 
+
+(* Evaluate expressions left to right. Returns the value of the last 
+ * expression call.*)
+let rec eval_elst_seq (env : environment) (elst : expression list)  
+  : value =
+  match elst with
+  | h1::h2::t -> let _ = eval h1 env in 
+      eval_elst_seq env (((fst h2),(eval h2 env))::t)
+  | h::t -> eval env h2
+  | [] -> raise (Error "Internal error: empty list match in eval_elst_seq")
+in
+
+(* Evaluate all expressions in passed in env. Returns the value of the last 
+ * expression call. *)
+let rec eval_elst_sim (env : environment) (elst : expression list) 
+  : value =
+  match elst with
+  | h1::h2::t -> let _ = eval env h1 in eval_elst_sim env ((eval env h2)::t)
+  | h::t -> eval env h2
+  | [] -> raise (Error "Internal error: empty list match in eval_elst_sim")
 in
 
 let procCall_helper (e1 : expression) (elst : expression list) 
@@ -203,32 +243,34 @@ let procCall_helper (e1 : expression) (elst : expression list)
   | ValProcedure (ProcLambda (vlst , env, e1lst)) 
     (* Checks # vars = # expressions and first exp not empty.*)
     when (List.length vlst)=(List.length elst) && e1lst <> []
-      -> 
-      let env' = List.fold_left2 
-      (* Add bindings one at a time to the environment.*)
-      (fun acc v e -> Environment.add_binding acc (v, ref (eval e env))) 
-      env vlst elst in
-      (* Evaluate e1lst in the new environment one at a time.*)  
-      List.fold_left (fun acc e -> eval e acc) (value (ValDatum Nil)) e1lst 
+      -> let _ = extend_env_seq env vlst elst in eval_elst_seq env elst  
   | ValProcedure (ProcLambda (vlst , env, e1lst)) -> raise (Error "Invalid
     procedure call, error with ProcLambda construction.") 
   | ValProcedure (ProcBuiltin f) -> f (List.map (fun x -> eval x env) elst) env   
-  | _ -> raise Error
+  | _ -> raise 
+      (Error "Invalid procedure call, error with ProcBuiltin construction.")
 in
 
 let let_helper (lblst : let_binding list) (elst : expression list) : value =
   if dupes_in_lst lblst <> [] 
   then raise (Error "Duplicate variable names in let exp")
   else if elst = [] then raise (Error "let binding requires at least 1 expr") 
-  else (* Add bindings simultaneously to the environment.*)
-    List.fold_left 
-    (fun acc b -> let (v , e) = b in Environment.add_binding env b) 
-    env vlst lblst in
-    (* Evaluate body expressions in new environment right to left.*)
-    List.fold_left (fun acc x -> eval x env) (value (ValDatum Nil)) elst
+  else let _ = extend_env_seq env (fst lblst) (snd lblst) in 
+    eval_elst_seq env elst
 in
 
+let let_star_helper lblst elst = 
+  let _ = extend_env_seq env (fst lblst) (snd lblst) in 
+    eval_elst_seq env elst
+in
 
+let let_rec_helper lblst elst = 
+  if dupes_in_lst lblst <> [] 
+  then raise (Error "Duplicate variable names in letrec exp")
+  else let _ = extend_env_seq env (fst lblst) (snd lblst) in 
+    eval_elst_seq env elst
+in
+*)
   match expression with
   | ExprSelfEvaluating SEBoolean b -> ValDatum (Atom (Boolean b))
   | ExprSelfEvaluating SEInteger i -> ValDatum (Atom (Integer i))
@@ -236,8 +278,8 @@ in
       !(Environment.get_binding env v) else raise (Error "Variable not bound")
   | ExprQuote d -> ValDatum d
   | ExprLambda (vl , el) -> ValProcedure (ProcLambda (vl,env,el))
-  | ExprProcCall (e1 , elst) ->
-     procCall_helper e1 elst env
+  | ExprProcCall (e1 , elst) -> raise (Error "Not done")
+     (*procCall_helper e1 elst env*)
 
   | ExprIf (e1 , e2 , e3) -> 
       (match (eval e1 env) with
@@ -245,15 +287,17 @@ in
       | _ -> eval e2 env) 
 
   | ExprAssignment (v , e) -> if Environment.is_bound env v then 
-      (Environment.get_binding env v) := (eval e env) 
+      let _ = (Environment.get_binding env v) := (eval e env) in ValDatum Nil
       else raise (Error "Invalid assignment")
 
-  | ExprLet (lblst , elst) -> let_helper lblst elst
+  | ExprLet (lblst , elst) -> raise (Error "Not done") 
+    (*let_helper lblst elst*)
 
-  | ExprLetStar (_, _)
+  | ExprLetStar (lblst , elst) -> raise (Error "Not done") 
+    (*let_star_helper lblst elst*)
 
-  | ExprLetRec (_, _)     ->
-     failwith "Ahahaha!  That is classic Rower."
+  | ExprLetRec (lblst , elst) -> raise (Error "Not done") 
+    (*let_rec_helper lblst elst*)
 
 (* Evaluates a toplevel input down to a value and an output environment in a
    given environment. *)
